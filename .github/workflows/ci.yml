@@ -3,6 +3,7 @@ name: RustCad CI
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
 
@@ -43,3 +44,137 @@ jobs:
 
       - name: Compilar release (otimizado)
         run: cargo build --release
+
+      - name: Listar binário release
+        run: |
+          echo "=== Binário release ==="
+          ls -lh target/release/rustcad*
+          echo "=== Tamanho ==="
+          du -h target/release/rustcad* 2>/dev/null || true
+
+      - name: Upload binário como artifact
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: rustcad-${{ matrix.os }}
+          path: |
+            target/release/rustcad
+            target/release/rustcad.exe
+          retention-days: 30
+
+  release:
+    name: Criar Release
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4.4.0
+
+      - name: Instalar toolchain Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependências Cargo
+        uses: actions/cache@v4.2.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Compilar release (Linux)
+        run: cargo build --release
+
+      - name: Criar diretório de dist
+        run: mkdir -p dist
+
+      - name: Copiar binário Linux
+        run: cp target/release/rustcad dist/rustcad-linux-x64
+
+      - name: Criar tarball Linux
+        run: tar -czf dist/rustcad-v0.1.0-linux-x64.tar.gz -C dist rustcad-linux-x64
+
+      - name: Download artifact Windows
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: rustcad-windows-latest
+          path: dist/windows
+
+      - name: Renomear binário Windows
+        run: |
+          if [ -f dist/windows/rustcad.exe ]; then
+            mv dist/windows/rustcad.exe dist/rustcad-v0.1.0-windows-x64.exe
+          elif [ -f dist/windows/rustcad ]; then
+            mv dist/windows/rustcad dist/rustcad-v0.1.0-windows-x64.exe
+          fi
+
+      - name: Download artifact macOS
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: rustcad-macos-latest
+          path: dist/macos
+
+      - name: Renomear binário macOS
+        run: |
+          if [ -f dist/macos/rustcad ]; then
+            mv dist/macos/rustcad dist/rustcad-v0.1.0-macos-x64
+          fi
+
+      - name: Listar arquivos de dist
+        run: ls -lh dist/
+
+      - name: Criar Release no GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: RustCad v0.1.0
+          body: |
+            ## RustCad v0.1.0
+
+            Clone de código aberto do AutoCAD escrito em Rust.
+
+            ### Tecnologia: NanoCore
+            - Núcleo de geometria vetorial ultra-leve (~600 KB binário)
+            - Structs densas #[repr(C)] (< 128 bytes por entidade)
+            - Índice espacial grid 16×16 para consultas rápidas
+            - Zero alocação por frame durante operações
+            - Ideal para notebooks fracos
+
+            ### Funcionalidades v1 (40% do AutoCAD)
+            - Desenho: LINE, CIRCLE, ARC, POINT, POLYLINE, RECTANG, TEXT
+            - Edição: MOVE, COPY, ROTATE, SCALE, ERASE
+            - Camadas: LAYER NEW, SET, ON/OFF, LOCK/UNLOCK
+            - Consulta: LIST, DIST, AREA, OSNAP
+            - Sessão: UNDO, HELP, QUIT
+            - Arquivos: DXF import/export, .ncas nativo
+
+            ### Como usar
+            Baixe o binário para seu sistema operacional e execute:
+            ```powershell
+            # Windows
+            .\rustcad-v0.1.0-windows-x64.exe
+
+            # Linux
+            ./rustcad-v0.1.0-linux-x64
+
+            # macOS
+            ./rustcad-v0.1.0-macos-x64
+            ```
+
+            ### Primeiros comandos
+            ```
+            LAYER NEW Piso
+            LAYER SET Piso
+            CIRCLE 100 100 50
+            LINE 0 0 200 200
+            DIST 0 0 100 100
+            QUIT
+            ```
+          draft: false
+          prerelease: false
+          files: |
+            dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
