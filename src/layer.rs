@@ -2,7 +2,6 @@
 //! Cada camada controla cor, tipo de linha, visibilidade e estado de bloqueio.
 
 use crate::entities::{Color, EntityProperties, LayerId, LineWeight, Linetype};
-use crate::math::EntityType;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

@@ -2,8 +2,8 @@
 //! Implementação simplificada para a fase 1 — suporte a LINE, CIRCLE, ARC, POINT, POLYLINE.
 //! Formato DXF R12/R2010 (texto ASCII).
 
-use crate::entities::{CadEntity, Color, EntityProperties, LayerId, LineWeight, Linetype};
-use crate::layer::{CadDocument, Layer, LayerTable};
+use crate::entities::{CadEntity, Color, LayerId};
+use crate::layer::{CadDocument, Layer};
 use crate::math::{Bounds2, Point2};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

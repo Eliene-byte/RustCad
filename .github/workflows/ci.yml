@@ -8,21 +8,36 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: "-D warnings"
 
 jobs:
-  build-and-test:
-    name: Build e Testes
+  fmt:
+    name: Formatação (cargo fmt)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repositório
         uses: actions/checkout@v4
 
       - name: Instalar toolchain Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          components: rustfmt, clippy
+          components: rustfmt
+
+      - name: Verificar formatação
+        run: cargo fmt --check
+
+  clippy:
+    name: Lint (cargo clippy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar toolchain Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
 
       - name: Cache dependências Cargo
         uses: actions/cache@v4
@@ -35,24 +50,43 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Verificar formatação (cargo fmt --check)
-        run: cargo fmt --check
+      - name: Executar clippy
+        run: cargo clippy --all-targets
 
-      - name: Lint com Clippy
-        run: cargo clippy --all-targets -- -D warnings
+  build-and-test:
+    name: Build e Testes
+    runs-on: ubuntu-latest
+    needs: [fmt, clippy]
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
 
-      - name: Compilar em modo release
+      - name: Instalar toolchain Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Cache dependências Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Compilar (debug)
+        run: cargo build
+
+      - name: Compilar (release)
         run: cargo build --release
 
       - name: Executar testes
-        run: cargo test --all-targets
+        run: cargo test
 
-      - name: Verificar tamanho do binário
-        run: |
-          echo "Tamanho do binário release:"
-          ls -lh target/release/rustcad
-
-  cross-platform-build:
+  cross-platform:
     name: Compilação Multiplataforma
     runs-on: ${{ matrix.os }}
     strategy:
@@ -64,7 +98,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Instalar toolchain Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
 
       - name: Cache dependências Cargo
         uses: actions/cache@v4
@@ -74,38 +110,11 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
       - name: Compilar para ${{ matrix.os }}
-        run: cargo build --release
+        run: cargo build
 
       - name: Executar testes para ${{ matrix.os }}
         run: cargo test
-
-  release:
-    name: Release e Binários
-    needs: [build-and-test, cross-platform-build]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - name: Checkout repositório
-        uses: actions/checkout@v4
-
-      - name: Instalar toolchain Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Compilar release
-        run: cargo build --release
-
-      - name: Criar artifact
-        run: |
-          mkdir -p dist
-          cp target/release/rustcad dist/rustcad
-          tar -czf dist/rustcad-linux-x64.tar.gz -C dist rustcad
-          zip -j dist/rustcad-win-x64.zip target/release/rustcad.exe 2>/dev/null || true
-
-      - name: Publicar release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

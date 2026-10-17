@@ -2,13 +2,11 @@
 //! Este módulo interpreta comandos digitados na linha de comando e executa ações no documento.
 
 use crate::entities::{
-    CadEntity, Circle, Entity, EntityId, EntityProperties, LayerId, Line, LineWeight, Linetype,
-    PointEntity, Polyline, Text,
+    CadEntity, Circle, Entity, EntityId, LayerId, LineWeight, Linetype, PointEntity, Polyline, Text,
 };
-use crate::layer::{Layer, LayerError, LayerTable};
+use crate::layer::{LayerError, LayerTable};
 use crate::math::{geometry, OsnapMode, OsnapResult, Point2};
 use crate::CadDocument;
-use std::collections::HashMap;
 use uuid::Uuid;
 
 /// Estado de execução de um comando interativo (ex: clicando pontos para uma linha).

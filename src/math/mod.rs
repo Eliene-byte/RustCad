@@ -1,7 +1,7 @@
 //! Matemática e geometria para o motor CAD.
 //! Fornece vetores 2D/3D, pontos, transformações e primitivas geométricas.
 
-use glam::{Vec2, Vec3};
+use glam::Vec2;
 use serde::{Deserialize, Serialize};
 use std::f64::consts::PI;
 
