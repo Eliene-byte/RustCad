@@ -62,26 +62,51 @@ O RustCad é um motor CAD compatível com fluxos de trabalho do AutoCAD, escrito
 - Rust 1.99+ (ou superior)
 - Cargo
 
-```bash
-# Instalar Rust (se ainda não tiver)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+#### Instalar Rust (se ainda não tiver)
 
+Acesse https://rustup.rs/ e baixe o instalador para Windows, ou rode no terminal:
+
+```powershell
+# No PowerShell (Windows)
+irm https://rustup.rs/ps1 | iex
+```
+
+Ou no Linux/macOS:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+#### Clonar e compilar
+
+```powershell
 # Clonar o repositório
 git clone https://github.com/Eliene-byte/RustCad.git
 cd RustCad
 
-# Compilar
+# Compilar versão otimizada (release)
 cargo build --release
 
 # Executar
-cargo run
-# ou diretamente:
+.\target\release\rustcad.exe
+```
+
+No Linux/macOS:
+
+```bash
 ./target/release/rustcad
 ```
 
-### Via GitHub Actions (binários pré-compilados)
+### Baixar como ZIP (sem instalar git)
 
-Os binários de release são gerados automaticamente em cada tag (`v*`) na aba **Releases** do repositório.
+1. Acesse: https://github.com/Eliene-byte/RustCad
+2. Clique no botão verde **Code** → **Download ZIP**
+3. Extraia a pasta
+4. Abra o terminal na pasta e rode:
+   ```powershell
+   cargo build --release
+   .\target\release\rustcad.exe
+   ```
 
 ## Uso rápido
 
@@ -113,6 +138,24 @@ Distância: 141.42
 ΔX: 100.00 ΔY: 100.00
 [Piso] Comando: SAIR
 ```
+
+### Primeiros comandos para testar
+
+| Comando | Exemplo | O que faz |
+|---------|---------|-----------|
+| `LAYER NEW <nome>` | `LAYER NEW Piso` | Cria uma camada |
+| `LAYER SET <nome>` | `LAYER SET Piso` | Define camada atual |
+| `CIRCLE <cx> <cy> <raio>` | `CIRCLE 100 100 50` | Desenha um círculo |
+| `LINE <x1> <y1> <x2> <y2>` | `LINE 0 0 200 200` | Desenha uma linha |
+| `DIST <x1> <y1> <x2> <y2>` | `DIST 0 0 100 100` | Mede distância |
+| `AREA` | `AREA` | Calcula área total |
+| `LIST` | `LIST` | Lista todas as entidades |
+| `MOVE <id> <dx> <dy>` | `MOVE <uuid> 10 10` | Move uma entidade |
+| `ERASE <id>` | `ERASE <uuid>` | Apaga uma entidade |
+| `UNDO` | `UNDO` | Desfaz última ação |
+| `HELP` | `HELP` | Mostra ajuda |
+| `QUIT` | `QUIT` | Sai do programa |
+
 
 ### Arquitetura do projeto
 
