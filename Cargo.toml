@@ -2,11 +2,11 @@
 name = "rustcad"
 version = "0.1.0"
 edition = "2021"
-description = "AutoCAD-compatible 2D CAD engine written in Rust. Phase 1 target: 40% of AutoCAD core functionality."
+description = "AutoCAD-compatible 2D CAD engine written in Rust. Powered by NanoCore — an ultra-lightweight vector geometry kernel (~140 MB binary) for extreme performance on low-end notebooks."
 authors = ["Eliene-byte"]
 license = "MIT"
 repository = "https://github.com/Eliene-byte/RustCad"
-keywords = ["cad", "autocad", "dxf", "2d", "engineering", "drawing"]
+keywords = ["cad", "autocad", "dxf", "2d", "engineering", "drawing", "lightweight", "nanocore"]
 categories = ["development-tools", "gui"]
 
 [dependencies]
@@ -31,9 +31,6 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
 anyhow = "1.0"
 
-# Arquitetura de aplicativo GUI (opcional, fase posterior)
-# eframe = "0.27"
-
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.0"
@@ -43,5 +40,6 @@ opt-level = 3
 lto = true
 codegen-units = 1
 panic = "abort"
+strip = true
 
 [workspace]
