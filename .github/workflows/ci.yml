@@ -1,0 +1,111 @@
+name: RustCad CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  build-and-test:
+    name: Build e Testes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar toolchain Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Cache dependências Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Verificar formatação (cargo fmt --check)
+        run: cargo fmt --check
+
+      - name: Lint com Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Compilar em modo release
+        run: cargo build --release
+
+      - name: Executar testes
+        run: cargo test --all-targets
+
+      - name: Verificar tamanho do binário
+        run: |
+          echo "Tamanho do binário release:"
+          ls -lh target/release/rustcad
+
+  cross-platform-build:
+    name: Compilação Multiplataforma
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar toolchain Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependências Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Compilar para ${{ matrix.os }}
+        run: cargo build --release
+
+      - name: Executar testes para ${{ matrix.os }}
+        run: cargo test
+
+  release:
+    name: Release e Binários
+    needs: [build-and-test, cross-platform-build]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar toolchain Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Compilar release
+        run: cargo build --release
+
+      - name: Criar artifact
+        run: |
+          mkdir -p dist
+          cp target/release/rustcad dist/rustcad
+          tar -czf dist/rustcad-linux-x64.tar.gz -C dist rustcad
+          zip -j dist/rustcad-win-x64.zip target/release/rustcad.exe 2>/dev/null || true
+
+      - name: Publicar release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
