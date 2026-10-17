@@ -46,9 +46,10 @@ jobs:
         run: cargo build --release
 
       - name: Listar binário release
+        shell: bash
         run: |
           echo "=== Binário release ==="
-          ls -lh target/release/rustcad*
+          ls -lh target/release/rustcad* 2>/dev/null || true
           echo "=== Tamanho ==="
           du -h target/release/rustcad* 2>/dev/null || true
 
